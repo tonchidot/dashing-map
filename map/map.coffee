@@ -5,6 +5,7 @@ class Dashing.Map extends Dashing.Widget
     color = $(@node).data("color")
 
     if color
+      fg_color = "#808080"
       style = [
         {
           "featureType": "water",
@@ -14,37 +15,40 @@ class Dashing.Map extends Dashing.Widget
         },{
           "featureType": "road",
           "stylers": [
-            { "color": color },
+            { "hue": color },
+            { "lightness": -20 },
             { "weight": 0.5 }
           ]
         },{
           "featureType": "poi.government",
           "stylers": [
-            { "lightness": 95 },
+            { "lightness": 20 },
             { "visibility": "off" }
           ]
         },{
           "featureType": "transit",
           "stylers": [
-            { "color": "#ffffff" }
+            { "lightness": 0 },
+            { "hue": color }
           ]
         },{
           "featureType": "transit",
           "elementType" : "geometry",
           "stylers": [
-            { "weight": 0.5 }
+            { "weight": 1 }
           ]
         },{
           "featureType": "transit",
           "elementType": "labels",
           "stylers": [
-            { "visibility": "off" }
+            { "hue": "#404040" },
+            { "visibility": "on" }
           ]
         },{
           "featureType": "road",
           "elementType": "labels",
           "stylers": [
-            { "visibility": "off" }
+            { "visibility": "on" }
           ]
         },{
           "featureType": "poi",
@@ -57,30 +61,30 @@ class Dashing.Map extends Dashing.Widget
           "featureType": "poi.park",
           "stylers": [
             { "lightness": 90 },
-            { "color": "#ffffff" }
+            { "color": fg_color }
           ]
         },{
           "featureType": "landscape",
           "stylers": [
-            { "color": "#ffffff" },
+            { "color": fg_color },
             { "visibility": "on" }
           ]
         },{
           "featureType": "poi.park",
           "stylers": [
-            { "color": "#ffffff" }
+            { "color": fg_color }
           ]
         },{
           "featureType": "landscape.man_made",
           "stylers": [
-            { "color": color },
-            { "lightness": 95 }
+            { "hue": color },
+            { "lightness": 10 }
           ]
         },{
           "featureType": "poi",
           "stylers": [
             { "visibility": "on" },
-            { "color": "#ffffff" }
+            { "color": fg_color }
           ]
         },{
           "featureType": "poi",
@@ -102,10 +106,9 @@ class Dashing.Map extends Dashing.Widget
           ]
         },{
           "elementType": "administrative.locality",
-          "elementType": "labels",
+          "elementType": "labels.icon",
           "stylers": [
-            { "color": "#000000" },
-            { "weight": 0.1 }
+            { "visibility": "off" }
           ]
         },{
           "featureType": "administrative.country",
@@ -140,11 +143,11 @@ class Dashing.Map extends Dashing.Widget
       []
 
     options =
-      zoom: 2
-      center: new google.maps.LatLng(30, -98)
-      disableDefaultUI: true
-      draggable: false
-      scrollwheel: false
+      zoom: 5
+      center: new google.maps.LatLng(35.660202,139.701992)
+      disableDefaultUI: false
+      draggable: true
+      scrollwheel: true
       disableDoubleClickZoom: true
       styles: style
 
@@ -152,34 +155,47 @@ class Dashing.Map extends Dashing.Widget
     @map = new google.maps.Map $(@node)[0], options
     @heat = []
     @markers = []
+    latlons = @get('latlons')
+    if latlons
+      this.renderData(latlons)
 
   onData: (data) ->
     return unless @map
+    @renderData(data.latlons)
+  
+  renderData: (latlons) ->
     if $(@node).data("type") == 'heat'
       marker.set('map', null) for marker in @heat
       @markers = []
 
-      @markers.push new google.maps.LatLng(marker[0],marker[1]) for marker in data.markers
+      @markers.push new google.maps.LatLng(latlon[0],latlon[1]) for latlon in latlons
 
       pointArray = new google.maps.MVCArray @markers
       @heat.push new google.maps.visualization.HeatmapLayer
         data: pointArray
         map: @map
+        dissipating: true
+        radius: 5 
+        opacity: 0.7
+        maxIntensity: 10
 
     else
       marker.set('map', null) for marker in @markers
       @markers = []
-      for marker in data.markers
+      for latlon in latlons
         marker_object = new google.maps.Marker
-          position: new google.maps.LatLng(marker[0],marker[1])
+          position: new google.maps.LatLng(latlon[0],latlon[1])
           map: @map
         @markers.push marker_object
 
     if @markers.length == 1
       @map.set('zoom', 9)
       @map.set('center', @markers[0].position)
-    else
-      bounds = new google.maps.LatLngBounds
-      bounds.extend(marker.position || marker) for marker in @markers
-      @map.panToBounds(bounds)
-      @map.fitBounds(bounds)
+    #----> fit to points disabled
+    #else
+      #bounds = new google.maps.LatLngBounds
+      #bounds.extend(marker.position || marker) for marker in @markers
+      #@map.panToBounds(bounds)
+      #@map.fitBounds(bounds)
+    #<----
+
