@@ -175,7 +175,7 @@ class Dashing.Map extends Dashing.Widget
         data: pointArray
         map: @map
         dissipating: true
-        radius: 5 
+        radius: 8 
         opacity: 0.7
         maxIntensity: 10
 
